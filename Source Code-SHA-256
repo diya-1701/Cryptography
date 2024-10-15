@@ -1,0 +1,69 @@
+import java.security.MessageDigest;//compute hash 
+import java.security.NoSuchAlgorithmException;//exception
+import java.util.Scanner;//user defined input
+
+public class Main {
+    
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);//object creation 
+        
+        // Get the hash from the user
+        System.out.print("Enter the SHA-256 hash (without '0x' prefix): ");//get user input without '0x'
+        String targetHash = scanner.nextLine().trim().toLowerCase();
+        
+        String matchingPlate = findMatchingPlate(targetHash);//method call to verify the hash entered matches with any generated plate
+        //if matching plate is found return the plate else retrurn "no matching plate found"
+        if (matchingPlate != null) {
+            System.out.println("Hash: " + targetHash + " corresponds to Plate: " + matchingPlate);
+        } else {
+            System.out.println("No matching plate found.");
+        }
+        
+        scanner.close();
+    }
+
+    private static String findMatchingPlate(String targetHash) { //define method to find the plates associated with hash
+        char[] letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();//array with all possible letters that number plate format can take
+        char[] digits = "0123456789".toCharArray();//array with all possible numbers that number plate format can take
+
+        // Brute-force search through all combinations
+        for (char l1 : letters) { 
+            for (char l2 : letters) {//outer 3 loops produce all possible combinations of letters 
+                for (char l3 : letters) {
+                    for (char d1 : digits) {//inner 4 loops compute the number combination for the plate
+                        for (char d2 : digits) {
+                            for (char d3 : digits) {
+                                for (char d4 : digits) {
+                                    String plate = "" + l1 + l2 + l3 + "-" + d1 + d2 + d3 + d4;//number plate format
+                                    String plateHash = hashPlate(plate);//compute hash of the number plate
+                                    if (plateHash.equals(targetHash)) {//if hash produced matches the hash enetered by the user, return the plate
+                                        return plate;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private static String hashPlate(String plate) { //define hashPlate method to produce possible hashes for number plate combinations
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");//create object initialised with SHA-256
+            byte[] hashBytes = digest.digest(plate.getBytes());//convert input plate to bytes and passed to digets method of the object
+            StringBuilder hexString = new StringBuilder();//convert bytes to hex  and store in hexString 
+            for (byte b : hashBytes) {//iterate through byte string
+                String hex = Integer.toHexString(0xff & b);//each byte processed to produce 2 character hexadecimal string
+                if (hex.length() == 1) {
+                    hexString.append('0');//if true,append leading 0  
+                }
+                hexString.append(hex);//append 2-char hexadecimal string to hexString
+            }
+            return hexString.toString();//return hexadecimal form of hash
+        } catch (NoSuchAlgorithmException e) {//exception handling if sha-256 is not supported 
+            throw new RuntimeException(e);
+        }
+    }
+}
